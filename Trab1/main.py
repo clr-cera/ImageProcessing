@@ -2,25 +2,35 @@ import streamlit as st
 import imageio.v3 as iio
 from trans import Transformation
 import intense
-import numpy as np
-st.title("Image Translation App")
+from functools import partial
+
+# Header
+st.title("Image Transformation App")
 st.text("Upload an image")
 
 def on_image_upload():
     print("Image uploaded.")
-    st.session_state["image"] = iio.imread(st.session_state["image_uploader"])
-    st.session_state["canvas_size"] = st.session_state["image"].shape
-    st.session_state["canvas_range"] = (0, st.session_state["canvas_size"][0], 0, st.session_state["canvas_size"][1])
+    image = iio.imread(st.session_state["image_uploader"])
+    # remove alpha channel if exists
+    if image.shape[2] == 4:
+        image = image[:, :, :3]
+    st.session_state["image"] = image
+    st.session_state["Transform"] = Transformation(st.session_state["image"].shape)
+    st.session_state["IntensityPipeline"] = []
+
 st.file_uploader(label="Upload an image (png, jpg)", type=["png", "jpg"], key="image_uploader", on_change=on_image_upload)
 
 
 if st.session_state.get("image", None) is not None:
-    st.image(st.session_state["image"][st.session_state["canvas_range"][0]:st.session_state["canvas_range"][1], 
-                                       st.session_state["canvas_range"][2]:st.session_state["canvas_range"][3]], 
-                                       caption="Uploaded Image")
-    print(f"Canvas range: {st.session_state['canvas_range']}")
-    print(f"Image shape: {st.session_state['image'].shape}")
+    # Display processed Image
+    piped_image =  st.session_state["Transform"].transform_image(st.session_state["image"])
+    for func in st.session_state["IntensityPipeline"]:
+        piped_image = func(piped_image)
 
+    st.image(piped_image, caption="Trans image")
+
+    # Geometric transformations
+    # Translation
     st.subheader("Trans the image")
     translation_input = st.text_input("Enter dx value for translation", key="dx_input")
     translation_input2 = st.text_input("Enter dy value for translation", key="dy_input")
@@ -33,42 +43,33 @@ if st.session_state.get("image", None) is not None:
         except ValueError:
             st.error("Please enter valid integer values for dx and dy.")
             should_apply = False
-        
-        # test bounds
-        if st.session_state["canvas_range"][0] + dy < 0 or st.session_state["canvas_range"][1] + dy > st.session_state["image"].shape[0] or \
-           st.session_state["canvas_range"][2] + dx < 0 or st.session_state["canvas_range"][3] + dx > st.session_state["image"].shape[1]:
-            st.error("Translation would move the image outside the canvas.")
+
+        # check corners
+        if not st.session_state["Transform"].is_translation_valid(dx, dy):
+            st.error("Translation would move part of the image out of bounds.")
             should_apply = False
+        
 
         if should_apply:
-            st.session_state["canvas_range"] = (st.session_state["canvas_range"][0] + dy, st.session_state["canvas_range"][1] + dy, st.session_state["canvas_range"][2] + dx, st.session_state["canvas_range"][3] + dx)
+            st.session_state["Transform"].translate(dx, dy)
             st.rerun(scope="app")
     
+    # Scaling
     st.subheader("Scale the image")
-    scale_input = st.text_input("Enter sx value for scaling", key="sx_input")
-    scale_input2 = st.text_input("Enter sy value for scaling", key="sy_input")
+    scale_input = st.text_input("Enter scale value for scaling", key="s_input")
     if st.button("Apply Scaling"):
         should_apply = True
         try:
-            sx = float(scale_input)
-            sy = float(scale_input2)
+            s = float(scale_input)
         except ValueError:
-            st.error("Please enter valid numbers for sx and sy.")
-            should_apply = False
-        
-        if sx * st.session_state["image"].shape[1] < st.session_state["canvas_size"][1] or sy * st.session_state["image"].shape[0] < st.session_state["canvas_size"][0]:
-            st.error("Scaling would make the image smaller than the canvas.")
+            st.error("Please enter valid numbers for scale.")
             should_apply = False
 
         if should_apply:
-            st.session_state["image"] = Transformation.scale_image(st.session_state["image"], sx, sy)
-            # centralize canvas after image scaling
-            st.session_state["canvas_range"] = (st.session_state["image"].shape[0]//2 - st.session_state["canvas_size"][0]//2, 
-                                                st.session_state["image"].shape[0]//2 + st.session_state["canvas_size"][0]//2, 
-                                                st.session_state["image"].shape[1]//2 - st.session_state["canvas_size"][1]//2, 
-                                                st.session_state["image"].shape[1]//2 + st.session_state["canvas_size"][1]//2)
+            st.session_state["Transform"].scale(s)
             st.rerun(scope="app")
     
+    # Rotating
     st.subheader("Rotate the image")
     rotation_input = st.text_input("Enter theta value for rotation (degrees)", key="theta_input")
     if st.button("Apply Rotation"):
@@ -79,39 +80,24 @@ if st.session_state.get("image", None) is not None:
             st.error("Please enter a valid number for theta.")
             should_apply = False
 
-
         if should_apply:
-            # Scale the image before rotation
-            # According to someone on stackoverflow:
-            # If w>h, the scaling factor is (w/h) sin(angle) + cos(angle).
-            # If h>w, the scaling factor is (h/w) sin(angle) + cos(angle).
-            current_scale = max(st.session_state["image"].shape[0] / st.session_state["canvas_size"][0], st.session_state["image"].shape[1] / st.session_state["canvas_size"][1])
-            current_width, current_height = st.session_state["image"].shape[1], st.session_state["image"].shape[0]
-            if current_width > current_height:
-                scaling_factor = (current_width / current_height) * np.sin(np.radians(theta)) + np.cos(np.radians(theta))
-            else:
-                scaling_factor = (current_height / current_width) * np.sin(np.radians(theta)) + np.cos(np.radians(theta))
-            final_scale = scaling_factor / current_scale
-            if final_scale > 1:
-                st.session_state["image"] = Transformation.scale_image(st.session_state["image"], final_scale, final_scale)
-                st.session_state["canvas_range"] = (st.session_state["image"].shape[0]//2 - st.session_state["canvas_size"][0]//2, 
-                                                    st.session_state["image"].shape[0]//2 + st.session_state["canvas_size"][0]//2, 
-                                                    st.session_state["image"].shape[1]//2 - st.session_state["canvas_size"][1]//2, 
-                                                    st.session_state["image"].shape[1]//2 + st.session_state["canvas_size"][1]//2)
-            st.session_state["image"] = Transformation.rot_image(st.session_state["image"], theta)
+            st.session_state["Transform"].rotate(theta)
             st.rerun(scope="app")
         
-    
+    # Intensity transformations
+    # Invert
     st.subheader("Invert the image!")
     if st.button("Apply Inversion"):
-        st.session_state["image"] = intense.inverse_intensity(st.session_state["image"])
+        st.session_state["IntensityPipeline"].append(intense.invert)
         st.rerun(scope="app")
 
+    # Logarithmic
     st.subheader("Logarithmic transformation")
     if st.button("Apply Logarithmic Transformation"):
-        st.session_state["image"] = intense.log(st.session_state["image"])
+        st.session_state["IntensityPipeline"].append(intense.log)
         st.rerun(scope="app")
     
+    # Gamma
     st.subheader("Gamma transformation")
     gamma_input = st.text_input("Enter gamma value for transformation", key="gamma_input")
     if st.button("Apply Gamma Transformation"):
@@ -123,9 +109,11 @@ if st.session_state.get("image", None) is not None:
             should_apply = False
 
         if should_apply:
-            st.session_state["image"] = intense.gamma(st.session_state["image"], gamma_value)
+            # Currying! :D
+            st.session_state["IntensityPipeline"].append(partial(intense.gamma, gamma_value=gamma_value))
             st.rerun(scope="app")
 
+    # Contrasting
     st.subheader("Modulate contrast")
     contrast_input = st.text_input("Enter contrast limit value for modulation", key="contrast_input")
     if st.button("Apply Contrast Modulation"):
@@ -137,10 +125,12 @@ if st.session_state.get("image", None) is not None:
             should_apply = False
 
         if should_apply:
-            st.session_state["image"] = intense.modulate_contrast(st.session_state["image"], contrast_limit)
+            # I love curry
+            st.session_state["IntensityPipeline"].append(partial(intense.modulate_contrast, contrast_limit=contrast_limit))
             st.rerun(scope="app")
 
+    # Sigmoiding (My function!)
     st.subheader("Sigmoid transformation")
     if st.button("Apply Sigmoid Transformation"):
-        st.session_state["image"] = intense.sigmoid(st.session_state["image"])
+        st.session_state["IntensityPipeline"].append(intense.sigmoid)
         st.rerun(scope="app")
