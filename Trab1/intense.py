@@ -1,5 +1,5 @@
 import numpy as np
-
+# Operations to alter the intensity of an image
 def inverse_intensity(image: np.ndarray):
     return 255 - image
 

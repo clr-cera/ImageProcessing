@@ -8,6 +8,7 @@ from functools import partial
 st.title("Image Transformation App")
 st.text("Upload an image")
 
+# Callback function to set global state when an image is uploaded
 def on_image_upload():
     print("Image uploaded.")
     image = iio.imread(st.session_state["image_uploader"])
@@ -18,9 +19,10 @@ def on_image_upload():
     st.session_state["Transform"] = Transformation(st.session_state["image"].shape)
     st.session_state["IntensityPipeline"] = []
 
+# File Picker
 st.file_uploader(label="Upload an image (png, jpg)", type=["png", "jpg"], key="image_uploader", on_change=on_image_upload)
 
-
+# After picking image
 if st.session_state.get("image", None) is not None:
     # Display processed Image
     piped_image =  st.session_state["Transform"].transform_image(st.session_state["image"])
