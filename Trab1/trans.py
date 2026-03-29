@@ -1,10 +1,15 @@
 import numpy as np
 import copy
+
+# Transformation class to handle geometric information,
+# and execute the transformations on the image
+# it is inspired by the usual game dev transform class.
 class Transformation:
     def __init__(self, img_shape):
         self.rotation_angle = 0
         self.scale_factor = 1
         self.position = (0, 0)
+        # img shape is needed to calculate the go_to_origin matrix
         self.img_shape = img_shape
 
     def _pos_matrix(self):
@@ -36,7 +41,7 @@ class Transformation:
                                             [0,0,1]])
         return go_to_origin_matrix
     
-    @property
+    @property # Just because I like it being a property, it feels like I am doing less computation
     def trans_matrix(self):
         origined_matrix = self._go_to_origin_matrix()
         scaled_matrix = self._scale_matrix() @ origined_matrix
@@ -45,6 +50,8 @@ class Transformation:
         final_matrix = self._go_to_origin_matrix(reverse=True) @ translated_matrix
         return final_matrix
     
+    # -- Setter function for the transform values --
+
     def translate(self, dx, dy):
         self.position = (self.position[0] + dy, self.position[1] - dx)
         return self
@@ -52,6 +59,7 @@ class Transformation:
     def rotate(self, theta):
         width, height = self.img_shape[1], self.img_shape[0]
 
+        # I got from stack overflow post with id 17517523
         needed_scaling_factor = 1
         if width > height:
             needed_scaling_factor = (width / height) * np.sin(np.radians(theta)) + np.cos(np.radians(theta))
@@ -62,7 +70,9 @@ class Transformation:
             self.scale_factor = needed_scaling_factor
         self.rotation_angle += theta
 
-        # Adjust position to keep it inside the image
+        # Centralize position to keep it inside the image
+        # I did not find a way to do avoid dead pixels without doing this
+        # if the image is already translated.
         self.position = (0,0)
 
         return self
@@ -88,13 +98,19 @@ class Transformation:
         return False
         
 
+    # Transforms the image given a transformation matrix,
+    # I decided to invert the matrix here instead of putting
+    # negative values in the transformation matrix property
+    # because I think it is more semantic for the transformation matrix
+    # to represent the actual transformation,
     def transform_image(self,image) -> np.ndarray:
         matrix = self.trans_matrix
         new_img = np.zeros_like(image)
+        matrix_inv = np.linalg.inv(matrix)
         for i in range(new_img.shape[0]):
             for j in range(new_img.shape[1]):
                 pixel_loc = np.array([i, j, 1])
-                old_pixel_loc = np.linalg.inv(matrix) @ pixel_loc
+                old_pixel_loc = matrix_inv @ pixel_loc
                 
                 if 0 <= old_pixel_loc[0] < image.shape[0] and 0 <= old_pixel_loc[1] < image.shape[1]:
                     new_img[i, j] = image[old_pixel_loc[0].astype(int), old_pixel_loc[1].astype(int)]
