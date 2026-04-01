@@ -1,3 +1,9 @@
+# Nome: Clara Ernesto de Carvalho
+# NUSP: 14559479
+# Sem: 2026.1
+# Code: SCC0251
+# Título: Trabalho 1 - TransEditor para suas necessidades de trans(formar) imagens!
+
 import streamlit as st
 import imageio.v3 as iio
 from trans import Transformation
@@ -90,7 +96,7 @@ if st.session_state.get("image", None) is not None:
     # Invert
     st.subheader("Invert the image!")
     if st.button("Apply Inversion"):
-        st.session_state["IntensityPipeline"].append(intense.invert)
+        st.session_state["IntensityPipeline"].append(intense.inverse_intensity)
         st.rerun(scope="app")
 
     # Logarithmic

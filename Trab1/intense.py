@@ -1,3 +1,9 @@
+# Nome: Clara Ernesto de Carvalho
+# NUSP: 14559479
+# Sem: 2026.1
+# Code: SCC0251
+# Título: Trabalho 1 - TransEditor para suas necessidades de trans(formar) imagens!
+
 import numpy as np
 # Operations to alter the intensity of an image
 def inverse_intensity(image: np.ndarray):
