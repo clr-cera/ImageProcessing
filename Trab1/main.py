@@ -11,7 +11,7 @@ import intense
 from functools import partial
 
 # Header
-st.title("Image Transformation App")
+st.title("TransEditor")
 st.text("Upload an image")
 
 # Callback function to set global state when an image is uploaded
@@ -123,18 +123,20 @@ if st.session_state.get("image", None) is not None:
 
     # Contrasting
     st.subheader("Modulate contrast")
-    contrast_input = st.text_input("Enter contrast limit value for modulation", key="contrast_input")
+    lower_contrast_input = st.text_input("Enter lower contrast limit value for modulation", key="lower_contrast_input")
+    upper_contrast_input = st.text_input("Enter upper contrast limit value for modulation", key="upper_contrast_input")
     if st.button("Apply Contrast Modulation"):
         should_apply = True
         try:
-            contrast_limit = float(contrast_input)
+            contrast_lower_limit = float(lower_contrast_input)
+            contrast_upper_limit = float(upper_contrast_input)
         except ValueError:
             st.error("Please enter a valid number for contrast limit.")
             should_apply = False
 
         if should_apply:
             # I love curry
-            st.session_state["IntensityPipeline"].append(partial(intense.modulate_contrast, contrast_limit=contrast_limit))
+            st.session_state["IntensityPipeline"].append(partial(intense.modulate_contrast, contrast_lower_limit=contrast_lower_limit, contrast_upper_limit=contrast_upper_limit))
             st.rerun(scope="app")
 
     # Sigmoiding (My function!)

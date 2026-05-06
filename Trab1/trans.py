@@ -12,8 +12,8 @@ import copy
 # it is inspired by the usual game dev transform class.
 class Transformation:
     def __init__(self, img_shape):
-        self.rotation_angle = 0
-        self.scale_factor = 1
+        self.rotation_angle = 0.0
+        self.scale_factor = 1.0
         self.position = (0, 0)
         # img shape is needed to calculate the go_to_origin matrix
         self.img_shape = img_shape
@@ -38,12 +38,12 @@ class Transformation:
     
     def _go_to_origin_matrix(self, reverse=False):
         if reverse:
-            go_to_origin_matrix = np.array([[1,0,self.img_shape[1]//2],
-                                            [0,1,self.img_shape[0]//2],
+            go_to_origin_matrix = np.array([[1,0,self.img_shape[0]//2],
+                                            [0,1,self.img_shape[1]//2],
                                             [0,0,1]])
         else:
-            go_to_origin_matrix = np.array([[1,0,-self.img_shape[1]//2],
-                                            [0,1,-self.img_shape[0]//2],
+            go_to_origin_matrix = np.array([[1,0,-self.img_shape[0]//2],
+                                            [0,1,-self.img_shape[1]//2],
                                             [0,0,1]])
         return go_to_origin_matrix
     
@@ -63,14 +63,11 @@ class Transformation:
         return self
 
     def rotate(self, theta):
-        width, height = self.img_shape[1], self.img_shape[0]
+        width, height = float(self.img_shape[1]), float(self.img_shape[0])
+
 
         # I got from stack overflow post with id 17517523
-        needed_scaling_factor = 1
-        if width > height:
-            needed_scaling_factor = (width / height) * np.sin(np.radians(theta)) + np.cos(np.radians(theta))
-        else:
-            needed_scaling_factor = (height / width) * np.sin(np.radians(theta)) + np.cos(np.radians(theta))
+        needed_scaling_factor = max(width/height, height/width) * np.sin(np.radians(theta)) + np.cos(np.radians(theta))
 
         if needed_scaling_factor > self.scale_factor:
             self.scale_factor = needed_scaling_factor
@@ -89,17 +86,17 @@ class Transformation:
     
     def is_translation_valid(self, dx, dy):
         corners = np.array([[0, 0, 1],
-                            [0, self.img_shape[0], 1],
-                            [self.img_shape[1], 0, 1],
-                            [self.img_shape[1], self.img_shape[0], 1]])
+                            [0, self.img_shape[1], 1],
+                            [self.img_shape[0], 0, 1],
+                            [self.img_shape[0], self.img_shape[1], 1]])
         print("Corners before transformation:", corners)
         possible_transformation = copy.deepcopy(self)
         possible_transformation.translate(dx, dy)
         translated_corners = np.array([np.linalg.inv(possible_transformation.trans_matrix) @ corner for corner in corners])
         print("Translated corners:", translated_corners)
         print("Image shape:", self.img_shape)
-        if np.all((translated_corners[:, 0] >= 0) & (translated_corners[:, 0] < self.img_shape[1]) &
-                  (translated_corners[:, 1] >= 0) & (translated_corners[:, 1] < self.img_shape[0])):
+        if np.all((translated_corners[:, 0] >= 0) & (translated_corners[:, 1] < self.img_shape[1]) &
+                  (translated_corners[:, 1] >= 0) & (translated_corners[:, 0] < self.img_shape[0])):
             return True
         return False
         
