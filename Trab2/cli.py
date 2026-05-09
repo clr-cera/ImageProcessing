@@ -2,7 +2,7 @@ import argparse
 from processes import apply_box_filter, apply_gaussian_filter, apply_shift_filter, apply_laplace_filter, apply_sobels_filter, sharpen_img_laplace, sharpen_img_unsharpening_mask, emboss_image
 import imageio.v3 as iio
 import numpy as np
-from videomaker import create_video_fft
+from videomaker_fft import create_video_fft
 
 def luminance(pixel):
     return (0.2126*pixel[0] + 0.7152*pixel[1] + 0.0722*pixel[2])
