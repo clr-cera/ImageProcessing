@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import imageio.v3 as iio
 
+# FFT2 implementation
 
 def _is_power_of_two(n):
     return n > 0 and (n & (n - 1)) == 0
@@ -96,6 +97,8 @@ def ifft2(input_fft):
     return out
 
 
+# This function creates a video showing frames of a source image with increasing frequencies being allowed in the result frame. 
+# It also saves the frames at 20% and 90% of the allowed frequencies
 def create_video_fft(input_img, output_path, fps=5):
     h, w = input_img.shape
     fourcc = cv2.VideoWriter.fourcc(*"mp4v")

@@ -7,6 +7,7 @@ from videomaker_fft import create_video_fft
 def luminance(pixel):
     return (0.2126*pixel[0] + 0.7152*pixel[1] + 0.0722*pixel[2])
 
+# everything is realized by the same cli, therefore the same code is used for both parts of the work.
 def parse_args():
     parser = argparse.ArgumentParser(description='Image processor')
     parser.add_argument('input_image', type=str, help='Path to the input image')

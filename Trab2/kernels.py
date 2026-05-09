@@ -1,4 +1,6 @@
 import numpy as np
+
+# This file only contains several kernels declarations
 # Shift
 def new_shift_kernel(size, shift_y, shift_x) -> np.ndarray:
     kernel = np.zeros((size, size))
@@ -45,6 +47,10 @@ def new_unsharpening_mask_kernel(size, sigma) -> np.ndarray:
     unsharpening_mask -= gaussian_kernel
     return unsharpening_mask
 
+
+# Embossing images! This is the kernel I decided to use, it is similar to other sharpening kernels, 
+# however it focus on changing the light perception around edges through a certain direction,
+# which in this case is from top-left to bottom-right.
 def new_emboss_kernel(intensity) -> np.ndarray:
     kernel = np.array([[-2*intensity, -1*intensity, 0],
                        [-1*intensity, 1, 1*intensity],
