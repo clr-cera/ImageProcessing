@@ -26,7 +26,7 @@ def emboss_image(image, intensity) -> np.ndarray:
 
 def apply_box_filter(image, size) -> np.ndarray:
     kernel = new_box_kernel(size)
-    return convolve2d(image, kernel, mode='same', boundary='symm')
+    return convolve2d(image, kernel, mode='same', boundary='fill', fillvalue=0)
 
 def apply_gaussian_filter(image, sigma, size) -> np.ndarray:
     kernel = new_gaussian_kernel(size, sigma)

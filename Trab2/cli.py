@@ -7,6 +7,17 @@ from videomaker_fft import create_video_fft
 def luminance(pixel):
     return (0.2126*pixel[0] + 0.7152*pixel[1] + 0.0722*pixel[2])
 
+
+def fft_spectrum_image(img):
+    centered_fft = np.fft.fftshift(np.fft.fft2(img))
+    magnitude = np.abs(centered_fft)
+    log_magnitude = np.log1p(magnitude)
+    max_value = log_magnitude.max()
+    if max_value == 0:
+        return np.zeros_like(log_magnitude, dtype=np.uint8)
+    return (log_magnitude / max_value * 255.0).astype(np.uint8)
+
+
 # everything is realized by the same cli, therefore the same code is used for both parts of the work.
 def parse_args():
     parser = argparse.ArgumentParser(description='Image processor')
@@ -69,10 +80,14 @@ def main():
     # Replace with actual image saving code
     if isinstance(result, tuple):
         iio.imwrite(args.output_image.replace('.png', '_sobel_x.png'), result[0].astype(np.uint8))
+        iio.imwrite(args.output_image.replace('.png', '_sobel_x_fft.png'), fft_spectrum_image(result[0]))
         iio.imwrite(args.output_image.replace('.png', '_sobel_y.png'), result[1].astype(np.uint8))
+        iio.imwrite(args.output_image.replace('.png', '_sobel_y_fft.png'), fft_spectrum_image(result[1]))
     else:
         iio.imwrite(args.output_image, result.astype(np.uint8))
+        iio.imwrite(args.output_image.replace('.png', '_fft.png'), fft_spectrum_image(result))
     iio.imwrite(args.output_image.replace('.png', '_original.png'), image.astype(np.uint8))
+    iio.imwrite(args.output_image.replace('.png', '_original_fft.png'), fft_spectrum_image(image))
 
 
 if __name__ == "__main__":
